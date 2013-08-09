@@ -30,6 +30,8 @@ function add_banner {
  * @license Copyright (c) 2013, The DOE Systems Biology Knowledgebase Project
  *
 `cat $svcs`
+ *
+ * Exported on `date +%Y-%m-%d`
  */
 Banner
 }
