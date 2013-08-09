@@ -1,0 +1,32 @@
+ * Services:
+ *
+ *    Annotation Service
+ *    Assembly Service
+ *    Authentication and Authorization Client
+ *    Auxiliary Store Service
+ *    CDD Lookup
+ *    Central Store
+ *    Communities API
+ *    FBA Modeling
+ *    Functional Ortholog Predictor
+ *    Genotype Phenotype Service
+ *    Genotyping Service
+ *    ID Service
+ *    IRIS
+ *    Metagenomics Analysis Tools R
+ *    Microbes Model Builder
+ *    Network Service
+ *    Ontology Service
+ *    phispy
+ *    Plant Expression Service
+ *    Probabilistic Annotation
+ *    PROM service
+ *    Protein Info service
+ *    QC Service
+ *    Regulation Service
+ *    Similarity Service
+ *    Translation Service
+ *    Tree Service
+ *    Workspace Service
+ *
+ * More info: http://www.kbase.us/developer-zone/services
