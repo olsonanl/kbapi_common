@@ -1,14 +1,10 @@
 package Bio::KBase::mlog;
 
-@ISA = qw(Exporter);
-@EXPORT = qw(init_mlog get_log_level update_config set_log_level set_log_file set_log_msg_check_count set_log_msg_check_interval clear_user_log_level logit);
-
 use strict;
 use warnings;
 use Config::Simple;
 use LWP::Simple;
 use JSON qw( decode_json );
-use DateTime;
 use Cwd 'abs_path';
 use Data::Dumper;
 use Sys::Hostname;
@@ -16,8 +12,6 @@ use List::Util qw[min max];
 use Time::HiRes;
 
 use Sys::Syslog qw( :DEFAULT setlogsock);
-
-require Exporter;
 
 # $ENV{'MLOG_CONFIG_FILE'} should point to an INI-formatted file, or an empty string, or should not exist.
 our $MLOG_CONFIG_FILE_DEFAULT = "/etc/mlog/mlog.conf";
@@ -64,6 +58,9 @@ foreach my $k (keys %{$_MLOG_TEXT_TO_LEVEL}) {
 our $LOG_LEVEL_MIN = min(keys %{$_MLOG_LEVEL_TO_TEXT});
 our $LOG_LEVEL_MAX = max(keys %{$_MLOG_LEVEL_TO_TEXT});
 
+our $USER = $ENV{'USER'};
+our $PARENT_FILE = abs_path($0);
+
 =pod
 
 =head1 NAME
@@ -74,17 +71,29 @@ mlog (message log)
 
 A library for sending message logging to syslog.
 
-The library checks for the config variables: mlog_log_level, mlog_api_url, and mlog_log_file in an INI-formatted config file that can be specified by setting the environment variable MLOG_CONFIG_FILE. The library first looks for these variables under a 'section' in the INI file which matches the 'subsystem' name in mlog->new() call. mlog_log_level can be used to set a global log level for mlog. mlog_api_url can be set to provide a control API for setting log levels. mlog_log_file can be set to provide the location of a file to which we can log messages in addition to syslog.
+The library checks for the config variables: mlog_log_level, mlog_api_url, and
+mlog_log_file in an INI-formatted config file that can be specified by setting
+the environment variable MLOG_CONFIG_FILE. The library first looks for these
+variables under a 'section' in the INI file which matches the 'subsystem' name
+in mlog->new() call. mlog_log_level can be used to set a global log level for
+mlog. mlog_api_url can be set to provide a control API for setting log levels.
+mlog_log_file can be set to provide the location of a file to which we can log
+messages in addition to syslog.
 
-The priority that is used to decide which log level setting is used for logging is as follows:
+The priority that is used to decide which log level setting is used for logging
+is as follows:
 
 =over 10
 
-=item * USER_LOG_LEVEL: log level set within the program that is using mlog by calling set_log_level()
+=item * USER_LOG_LEVEL: log level set within the program that is using mlog by
+calling set_log_level()
 
-=item * CONFIG_LOG_LEVEL: log level (mlog_log_level) set within the INI file located at the path set in $ENV{'MLOG_CONFIG_FILE'}
+=item * CONFIG_LOG_LEVEL: log level (mlog_log_level) set within the INI file
+located at the path set in $ENV{'MLOG_CONFIG_FILE'}
 
-=item * API_LOG_LEVEL: log level set by the logging control server in the control API matching the log constraints (if mlog_api_url is specified in config file)
+=item * API_LOG_LEVEL: log level set by the logging control server in the
+control API matching the log constraints (if mlog_api_url is specified in
+config file)
 
 =item * DEFAULT_LOG_LEVEL: INFO, log level = 6
 
@@ -92,13 +101,19 @@ The priority that is used to decide which log level setting is used for logging 
 
 =head1 METHODS
 
-mlog->new(string subsystem, hashref constraints): Create a new mlog instance. Constraints are optional.
+mlog->new(string subsystem, hashref constraints): Create a new mlog instance.
+Constraints are optional.
 
-logit(int level, string message): sends log message to syslog.
+log_message(int level, string message): sends log message to syslog.
 
 =over 10
 
-=item * level: (0-9) The logging level for this message is compared to the logging level that has been set in mlog.  If it is <= the set logging level, the message will be sent to syslog (and if specified in the mlog configuration, a log file), otherwise it will be ignored.  Logging level is set to 6 if message control API cannot be reached and the user does not set the log level. Log level can also be entered as string (e.g. 'DEBUG')
+=item * level: (0-9) The logging level for this message is compared to the
+logging level that has been set in mlog.  If it is <= the set logging level,
+the message will be sent to syslog (and if specified in the mlog configuration,
+a log file), otherwise it will be ignored.  Logging level is set to 6 if
+message control API cannot be reached and the user does not set the log level.
+Log level can also be entered as string (e.g. 'DEBUG')
 
 =item * message: This is the log message.
 
@@ -106,7 +121,9 @@ logit(int level, string message): sends log message to syslog.
 
 get_log_level(): Returns the current log level as an integer.
 
-set_log_level(integer level) : Sets the log level. Only use this if you wish to override the log levels that are defined by the mlog configuration file and the control API. Can also be entered as string (e.g. 'DEBUG')
+set_log_level(integer level) : Sets the log level. Only use this if you wish to
+override the log levels that are defined by the mlog configuration file and the
+control API. Can also be entered as string (e.g. 'DEBUG')
 
 =over 10
 
@@ -134,13 +151,24 @@ set_log_level(integer level) : Sets the log level. Only use this if you wish to 
 
 =back
 
-set_log_file(string filename): Used to set or update the path to the file where we would like to have messages logged. Log file set in program with this function will over-ride any log file set in the config file.
+set_log_file(string filename): Used to set or update the path to the file where
+we would like to have messages logged. Log file set in program with this
+function will over-ride any log file set in the config file.
 
-set_log_msg_check_count(integer count): Used to set the number the messages that mlog will log before checking the mlog configuration and querying the control API for the log level if mlog_api_url is set in $ENV{'MLOG_CONFIG_FILE'} (default is 100 messages).
+set_log_msg_check_count(integer count): Used to set the number the messages
+that mlog will log before checking the mlog configuration and querying the
+control API for the log level if mlog_api_url is set in
+$ENV{'MLOG_CONFIG_FILE'} (default is 100 messages).
 
-set_log_msg_check_interval(integer seconds): Used to set the interval, in seconds, that will be allowed to pass before mlog will check the mlog configuration and query the control API for the log level if mlog_api_url is set in $ENV{'MLOG_CONFIG_FILE'} (default is 300 seconds).
+set_log_msg_check_interval(integer seconds): Used to set the interval, in
+seconds, that will be allowed to pass before mlog will check the mlog
+configuration and query the control API for the log level if mlog_api_url is
+set in $ENV{'MLOG_CONFIG_FILE'} (default is 300 seconds).
 
-update_config() : Checks the mlog configuration file at $ENV{'MLOG_CONFIG_FILE'} for mlog_log_level, mlog_api_url, and mlog_log_file and checks the control API for the currently set log level if mlog_api_url is set.
+update_config() : Checks the mlog configuration file at
+$ENV{'MLOG_CONFIG_FILE'} for mlog_log_level, mlog_api_url, and mlog_log_file
+and checks the control API for the currently set log level if mlog_api_url is
+set.
 
 clear_user_log_level() : Removes the user-defined log level.
 
@@ -165,6 +193,7 @@ sub new {
     $self->{module} = _get_option($options, 'module');
     $self->{method} = _get_option($options, 'method');
     $self->{call_id} = _get_option($options, 'call_id');
+    $self->{ip_address} = _get_option($options, 'ip_address');
     $self->{_callback} = defined $options->{"changecallback"} ? 
             $options->{"changecallback"} : sub {};
     $self->{_subsystem} = $sub;
@@ -198,9 +227,9 @@ sub new {
 
 sub _get_time_since_start {
     my ($self) = @_;
-    my $now = DateTime->now( time_zone => 'local' )->set_time_zone('floating');
-    my $seconds_duration = $now->subtract_datetime_absolute($self->{_time_at_config_update});
-    return $seconds_duration->seconds;
+    my $now = time;
+    my $seconds_duration = $now - $self->{_time_at_config_update};
+    return $seconds_duration;
 }
 
 sub get_log_level {
@@ -223,7 +252,7 @@ sub update_config {
     
     $self->{_api_log_level} = -1;
     $self->{_msgs_since_config_update} = 0;
-    $self->{_time_at_config_update} = DateTime->now( time_zone => 'local' )->set_time_zone('floating');
+    $self->{_time_at_config_update} = time;
     
     # Retrieving config variables.
     my $api_url = "";
@@ -339,17 +368,18 @@ sub clear_user_log_level {
 }
 
 sub _get_ident {
-    my ($self, $level, $user, $file, $authuser, $module, $method, $call_id) = @_;
+    my ($self, $level, $authuser, $module, $method, $call_id, $ip_address) = @_;
     my @infos = ($self->{_subsystem}, $_MLOG_LEVEL_TO_TEXT->{$level},
-                    Time::HiRes::time(), $user, $file, $$);
-    if ($self->{authuser}) {
+                    Time::HiRes::time(), $USER, $PARENT_FILE, $$);
+    if ($self->{ip_address}) {
+        push @infos, $ip_address || '-';
+    } if ($self->{authuser}) {
         push @infos, $authuser || '-';
-    }
-    if ($self->{module}) {
+    } if ($self->{module}) {
         push @infos, $module || '-';
-    }if ($self->{method}) {
+    } if ($self->{method}) {
         push @infos, $method || '-';
-    }if ($self->{call_id}) {
+    } if ($self->{call_id}) {
         push @infos, $call_id || '-';
     }
     return "[" . join("] [", @infos). "]";
@@ -357,7 +387,6 @@ sub _get_ident {
 
 sub _syslog {
     my ($self, $facility, $level, $ident, $message) = @_;
-    setlogsock('unix');
     openlog($ident, "", $facility);
     if(ref($message) eq 'ARRAY') {
         foreach my $m (@{$message}) {
@@ -385,23 +414,21 @@ sub _log {
     close LOG;
 }
 
-sub logit {
-    my ($self, $level, $message, $authuser, $module, $method, $call_id) = @_;
+sub log_message {
+    my ($self, $level, $message, $authuser, $module, $method, $call_id,
+        $ip_address) = @_;
     $level = $self->_resolve_log_level($level);
 
     ++$self->{msg_count};
     ++$self->{_msgs_since_config_update};
-
-    my $user = $ENV{'USER'};
-    my $file = abs_path($0);
 
     if($self->{_msgs_since_config_update} >= $self->{_recheck_api_msg} ||
         $self->_get_time_since_start() >= $self->{_recheck_api_time}) {
         $self->update_config();
     }
 
-    my $ident = $self->_get_ident($level, $user, $file, $authuser, $module,
-        $method, $call_id);
+    my $ident = $self->_get_ident($level, $authuser, $module, $method, $call_id,
+        $ip_address);
     # If this message is an emergency, send a copy to the emergency facility first.
     if($level == 0) {
         $self->_syslog($EMERG_FACILITY, $level, $ident, $message);

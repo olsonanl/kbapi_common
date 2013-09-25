@@ -10,7 +10,7 @@ METHODS
            should call this at the beginning of your program. Constraints are
            optional.
 
-       logit(int level, string message): sends log message to syslog.
+       log_message(int level, string message): sends log message to syslog.
 
        *         level: (0-9) The logging level for this message is compared to
                     the logging level that has been set in mlog.  If it is <=
@@ -69,7 +69,6 @@ METHODS
 import json as _json
 import urllib2 as _urllib2
 import syslog as _syslog
-import datetime as _datetime
 import platform as _platform
 import inspect as _inspect
 import os as _os
@@ -131,11 +130,15 @@ class mlog(object):
     """
 
     def __init__(self, subsystem, constraints=None, config=None, logfile=None,
-                 authuser=False, module=False, method=False, call_id=False,
-                 changecallback=None):
+                 ip_address=False, authuser=False, module=False,
+                 method=False, call_id=False, changecallback=None):
         if not subsystem:
             raise ValueError("Subsystem must be supplied")
 
+        self.user = _getpass.getuser()
+        self.parentfile = _os.path.abspath(_inspect.getfile(
+            _inspect.stack()[1][0]))
+        self.ip_address = ip_address
         self.authuser = authuser
         self.module = module
         self.method = method
@@ -155,7 +158,7 @@ class mlog(object):
         self._config_log_file = None
         self._api_log_level = -1
         self._msgs_since_config_update = 0
-        self._time_at_config_update = _datetime.datetime.now()
+        self._time_at_config_update = time.time()
         self.msg_count = 0
         self._recheck_api_msg = 100
         self._recheck_api_time = 300  # 5 mins
@@ -166,8 +169,8 @@ class mlog(object):
         self._init = False
 
     def _get_time_since_start(self):
-        time_diff = _datetime.datetime.now() - self._time_at_config_update
-        return (time_diff.days * 24 * 60 * 60) + time_diff.seconds
+        time_diff = time.time() - self._time_at_config_update
+        return time_diff
 
     def get_log_level(self):
         if(self._user_log_level != -1):
@@ -192,7 +195,7 @@ class mlog(object):
 
         self._api_log_level = -1
         self._msgs_since_config_update = 0
-        self._time_at_config_update = _datetime.datetime.now()
+        self._time_at_config_update = time.time()
 
         # Retrieving the control API defined log level
         api_url = None
@@ -292,10 +295,12 @@ class mlog(object):
         self._user_log_level = -1
         self._callback()
 
-    def _get_ident(self, level, user, file_, authuser, module, method,
-                   call_id):
+    def _get_ident(self, level, user, parentfile, ip_address, authuser, module,
+                   method, call_id):
         infos = [self._subsystem, _MLOG_LEVEL_TO_TEXT[level],
-                 repr(time.time()), user, file_, str(_os.getpid())]
+                 repr(time.time()), user, parentfile, str(_os.getpid())]
+        if self.ip_address:
+            infos.append(str(ip_address) if ip_address else '-')
         if self.authuser:
             infos.append(str(authuser) if authuser else '-')
         if self.module:
@@ -307,7 +312,7 @@ class mlog(object):
         return "[" + "] [".join(infos) + "]"
 
     def _syslog(self, facility, level, ident, message):
-        _syslog.openlog(ident, facility=facility)
+        _syslog.openlog(ident, facility)
         if isinstance(message, basestring):
             _syslog.syslog(_MLOG_TO_SYSLOG[level], message)
         else:
@@ -319,7 +324,7 @@ class mlog(object):
         _syslog.closelog()
 
     def _log(self, ident, message):
-        ident = ' '.join([str(_datetime.datetime.now().replace(microsecond=0)),
+        ident = ' '.join([str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),
                         _platform.node(), ident + ': '])
         try:
             with open(self.get_log_file(), 'a') as log:
@@ -336,23 +341,20 @@ class mlog(object):
                 ': ' + str(e) + '.'
             _warnings.warn(err)
 
-    def logit(self, level, message, authuser=None, module=None, method=None,
-              call_id=None):
+    def log_message(self, level, message, ip_address=None, authuser=None,
+                    module=None, method=None, call_id=None):
 #        message = str(message)
         level = self._resolve_log_level(level)
 
         self.msg_count += 1
         self._msgs_since_config_update += 1
 
-        user = _getpass.getuser()
-        file_ = _os.path.abspath(_inspect.getfile(_inspect.stack()[1][0]))
-
         if(self._msgs_since_config_update >= self._recheck_api_msg
            or self._get_time_since_start() >= self._recheck_api_time):
             self.update_config()
 
-        ident = self._get_ident(level, user, file_, authuser, module, method,
-                                call_id)
+        ident = self._get_ident(level, self.user, self.parentfile, ip_address,
+                                authuser, module, method, call_id)
         # If this message is an emergency, send a copy to the emergency
         # facility first.
         if(level == 0):
