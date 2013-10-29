@@ -1,4 +1,4 @@
-package Bio::KBase::mlog;
+package Bio::KBase::Log;
 
 use strict;
 use warnings;
