@@ -1,19 +1,19 @@
 """
 NAME
-       mlog
+       log
 
 DESCRIPTION
        A library for sending logging messages to syslog.
 
 METHODS
-       mlog(string subsystem, hashref constraints): Initializes mlog. You
+       log(string subsystem, hashref constraints): Initializes log. You
            should call this at the beginning of your program. Constraints are
            optional.
 
        log_message(int level, string message): sends log message to syslog.
 
        *         level: (0-9) The logging level for this message is compared to
-                    the logging level that has been set in mlog.  If it is <=
+                    the logging level that has been set in log.  If it is <=
                     the set logging level, the message will be sent to syslog,
                     otherwise it will be ignored.  Logging level is set to 6
                     if control API cannot be reached and the user does
@@ -52,17 +52,17 @@ METHODS
        *          9 : DEBUG3 - highest level of debug
 
        set_log_msg_check_count(integer count): used to set the number the
-           messages that mlog will log before querying the control API for the
+           messages that log will log before querying the control API for the
            log level (default is 100 messages).
 
        set_log_msg_check_interval(integer seconds): used to set the interval,
-           in seconds, that will be allowed to pass before mlog will query the
+           in seconds, that will be allowed to pass before log will query the
            control API for the log level (default is 300 seconds).
 
        update_api_log_level() : Checks the control API for the currently set
            log level.
 
-       use_api_log_level() : Removes the user-defined log level and tells mlog
+       use_api_log_level() : Removes the user-defined log level and tells log
            to use the control API-defined log level.
 """
 
@@ -77,7 +77,7 @@ import warnings as _warnings
 from ConfigParser import ConfigParser as _ConfigParser
 import time
 
-MLOG_CONF_FILE_DEFAULT = "/etc/mlog/mlog.conf"
+MLOG_CONF_FILE_DEFAULT = "/etc/log/log.conf"
 MLOG_ENV_FILE = 'MLOG_CONFIG_FILE'
 _GLOBAL = 'global'
 MLOG_LOG_LEVEL = 'mlog_log_level'
@@ -124,7 +124,7 @@ LOG_LEVEL_MAX = max(_MLOG_LEVEL_TO_TEXT.keys())
 del k, v
 
 
-class mlog(object):
+class log(object):
     """
     This class contains the methods necessary for sending log messages.
     """
@@ -324,7 +324,8 @@ class mlog(object):
         _syslog.closelog()
 
     def _log(self, ident, message):
-        ident = ' '.join([str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),
+        ident = ' '.join([str(time.strftime(
+            "%Y-%m-%d %H:%M:%S", time.localtime())),
                         _platform.node(), ident + ': '])
         try:
             with open(self.get_log_file(), 'a') as log:

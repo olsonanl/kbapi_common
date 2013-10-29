@@ -14,7 +14,7 @@ use Time::HiRes;
 use Sys::Syslog qw( :DEFAULT setlogsock);
 
 # $ENV{'MLOG_CONFIG_FILE'} should point to an INI-formatted file, or an empty string, or should not exist.
-our $MLOG_CONFIG_FILE_DEFAULT = "/etc/mlog/mlog.conf";
+our $MLOG_CONFIG_FILE_DEFAULT = "/etc/log/log.conf";
 our $MLOG_ENV_FILE = "MLOG_CONFIG_FILE";
 my $_GLOBAL = "global";
 our $MLOG_LOG_LEVEL = "mlog_log_level";
@@ -65,7 +65,7 @@ our $PARENT_FILE = abs_path($0);
 
 =head1 NAME
 
-mlog (message log)
+Log (message log)
 
 =head1 DESCRIPTION
 
@@ -75,8 +75,8 @@ The library checks for the config variables: mlog_log_level, mlog_api_url, and
 mlog_log_file in an INI-formatted config file that can be specified by setting
 the environment variable MLOG_CONFIG_FILE. The library first looks for these
 variables under a 'section' in the INI file which matches the 'subsystem' name
-in mlog->new() call. mlog_log_level can be used to set a global log level for
-mlog. mlog_api_url can be set to provide a control API for setting log levels.
+in Log->new() call. mlog_log_level can be used to set a global log level for
+Log. mlog_api_url can be set to provide a control API for setting log levels.
 mlog_log_file can be set to provide the location of a file to which we can log
 messages in addition to syslog.
 
@@ -85,7 +85,7 @@ is as follows:
 
 =over 10
 
-=item * USER_LOG_LEVEL: log level set within the program that is using mlog by
+=item * USER_LOG_LEVEL: log level set within the program that is using Log by
 calling set_log_level()
 
 =item * CONFIG_LOG_LEVEL: log level (mlog_log_level) set within the INI file
@@ -101,7 +101,7 @@ config file)
 
 =head1 METHODS
 
-mlog->new(string subsystem, hashref constraints): Create a new mlog instance.
+Log->new(string subsystem, hashref constraints): Create a new Log instance.
 Constraints are optional.
 
 log_message(int level, string message): sends log message to syslog.
@@ -109,8 +109,8 @@ log_message(int level, string message): sends log message to syslog.
 =over 10
 
 =item * level: (0-9) The logging level for this message is compared to the
-logging level that has been set in mlog.  If it is <= the set logging level,
-the message will be sent to syslog (and if specified in the mlog configuration,
+logging level that has been set in Log.  If it is <= the set logging level,
+the message will be sent to syslog (and if specified in the Log configuration,
 a log file), otherwise it will be ignored.  Logging level is set to 6 if
 message control API cannot be reached and the user does not set the log level.
 Log level can also be entered as string (e.g. 'DEBUG')
@@ -122,7 +122,7 @@ Log level can also be entered as string (e.g. 'DEBUG')
 get_log_level(): Returns the current log level as an integer.
 
 set_log_level(integer level) : Sets the log level. Only use this if you wish to
-override the log levels that are defined by the mlog configuration file and the
+override the log levels that are defined by the Log configuration file and the
 control API. Can also be entered as string (e.g. 'DEBUG')
 
 =over 10
@@ -156,16 +156,16 @@ we would like to have messages logged. Log file set in program with this
 function will over-ride any log file set in the config file.
 
 set_log_msg_check_count(integer count): Used to set the number the messages
-that mlog will log before checking the mlog configuration and querying the
+that Log will log before checking the Log configuration and querying the
 control API for the log level if mlog_api_url is set in
 $ENV{'MLOG_CONFIG_FILE'} (default is 100 messages).
 
 set_log_msg_check_interval(integer seconds): Used to set the interval, in
-seconds, that will be allowed to pass before mlog will check the mlog
+seconds, that will be allowed to pass before Log will check the Log
 configuration and query the control API for the log level if mlog_api_url is
 set in $ENV{'MLOG_CONFIG_FILE'} (default is 300 seconds).
 
-update_config() : Checks the mlog configuration file at
+update_config() : Checks the Log configuration file at
 $ENV{'MLOG_CONFIG_FILE'} for mlog_log_level, mlog_api_url, and mlog_log_file
 and checks the control API for the currently set log level if mlog_api_url is
 set.
@@ -308,7 +308,7 @@ sub update_config {
             }
             $self->{_api_log_level} = $max_matching_level;
         } else {
-            warn "Could not retrieve mlog subsystem from control API at: $subsystem_api_url";
+            warn "Could not retrieve Log subsystem from control API at: $subsystem_api_url";
         }
     }
 }
