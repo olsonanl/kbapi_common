@@ -77,7 +77,6 @@ import warnings as _warnings
 from ConfigParser import ConfigParser as _ConfigParser
 import time
 
-MLOG_CONF_FILE_DEFAULT = "/etc/log/log.conf"
 MLOG_ENV_FILE = 'MLOG_CONFIG_FILE'
 _GLOBAL = 'global'
 MLOG_LOG_LEVEL = 'mlog_log_level'
@@ -149,9 +148,8 @@ class log(object):
         self._mlog_config_file = config
         if not self._mlog_config_file:
             self._mlog_config_file = _os.environ.get(MLOG_ENV_FILE, None)
-        if not self._mlog_config_file:
-            self._mlog_config_file = MLOG_CONF_FILE_DEFAULT
-        self._mlog_config_file = str(self._mlog_config_file)
+        if self._mlog_config_file:
+            self._mlog_config_file = str(self._mlog_config_file)
         self._user_log_level = -1
         self._config_log_level = -1
         self._user_log_file = logfile
@@ -199,7 +197,7 @@ class log(object):
 
         # Retrieving the control API defined log level
         api_url = None
-        if _os.path.isfile(self._mlog_config_file):
+        if self._mlog_config_file and _os.path.isfile(self._mlog_config_file):
             cfg = _ConfigParser()
             cfg.read(self._mlog_config_file)
             cfgitems = self._get_config_items(cfg, _GLOBAL)
@@ -219,7 +217,7 @@ class log(object):
         elif self._mlog_config_file:
             _warnings.warn('Cannot read config file ' + self._mlog_config_file)
 
-        if(api_url):
+        if (api_url):
             subsystem_api_url = api_url + "/" + self._subsystem
             try:
                 data = _json.load(_urllib2.urlopen(subsystem_api_url,

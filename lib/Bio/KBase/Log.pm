@@ -14,7 +14,6 @@ use Time::HiRes;
 use Sys::Syslog qw( :DEFAULT setlogsock);
 
 # $ENV{'MLOG_CONFIG_FILE'} should point to an INI-formatted file, or an empty string, or should not exist.
-our $MLOG_CONFIG_FILE_DEFAULT = "/etc/log/log.conf";
 our $MLOG_ENV_FILE = "MLOG_CONFIG_FILE";
 my $_GLOBAL = "global";
 our $MLOG_LOG_LEVEL = "mlog_log_level";
@@ -202,9 +201,6 @@ sub new {
         $self->{_mlog_config_file} = defined $ENV{$MLOG_ENV_FILE} ?
                 $ENV{$MLOG_ENV_FILE} : undef;
     }
-    if(!(defined $self->{_mlog_config_file})) {
-        $self->{_mlog_config_file} = $MLOG_CONFIG_FILE_DEFAULT;
-    }
     $self->{_user_log_level} = -1;
     $self->{_config_log_level} = -1;
     $self->{_user_log_file} = _get_option($options, 'logfile');
@@ -256,7 +252,8 @@ sub update_config {
     
     # Retrieving config variables.
     my $api_url = "";
-    if(-e $self->{_mlog_config_file} && -s $self->{_mlog_config_file} > 0) {
+    if(defined $self->{_mlog_config_file} && -e $self->{_mlog_config_file} &&
+             -s $self->{_mlog_config_file} > 0) {
         my $cfg = new Config::Simple($self->{_mlog_config_file});
         my $cfgitems = $cfg->get_block($_GLOBAL);
         my $subitems = $cfg->get_block($self->{_subsystem});
