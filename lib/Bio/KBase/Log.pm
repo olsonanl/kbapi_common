@@ -421,7 +421,7 @@ sub _log {
 
 sub log_message {
     my ($self, $level, $message, $authuser, $module, $method, $call_id,
-        $ip_address) = @_;
+        $ip_address, $tag) = @_;
     $level = $self->_resolve_log_level($level);
 
     ++$self->{msg_count};
@@ -433,7 +433,7 @@ sub log_message {
     }
 
     my $ident = $self->_get_ident($level, $authuser, $module, $method, $call_id,
-        $ip_address);
+        $ip_address, $tag);
     # If this message is an emergency, send a copy to the emergency facility first.
     if($level == 0) {
         $self->_syslog($EMERG_FACILITY, $level, $ident, $message);
