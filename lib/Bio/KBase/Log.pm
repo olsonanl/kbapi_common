@@ -193,6 +193,7 @@ sub new {
     $self->{method} = _get_option($options, 'method');
     $self->{call_id} = _get_option($options, 'call_id');
     $self->{ip_address} = _get_option($options, 'ip_address');
+    $self->{tag} = _get_option($options, 'tag');
     $self->{_callback} = defined $options->{"changecallback"} ? 
             $options->{"changecallback"} : sub {};
     $self->{_subsystem} = $sub;
@@ -365,19 +366,26 @@ sub clear_user_log_level {
 }
 
 sub _get_ident {
-    my ($self, $level, $authuser, $module, $method, $call_id, $ip_address) = @_;
+    my ($self, $level, $authuser, $module, $method, $call_id, $ip_address, $tag) = @_;
     my @infos = ($self->{_subsystem}, $_MLOG_LEVEL_TO_TEXT->{$level},
                     Time::HiRes::time(), $USER, $PARENT_FILE, $$);
     if ($self->{ip_address}) {
         push @infos, $ip_address || '-';
-    } if ($self->{authuser}) {
+    }
+    if ($self->{authuser}) {
         push @infos, $authuser || '-';
-    } if ($self->{module}) {
+    }
+    if ($self->{module}) {
         push @infos, $module || '-';
-    } if ($self->{method}) {
+    }
+    if ($self->{method}) {
         push @infos, $method || '-';
-    } if ($self->{call_id}) {
+    }
+    if ($self->{call_id}) {
         push @infos, $call_id || '-';
+    }
+    if ($self->{tag}) {
+        push @infos, $tag || '-';
     }
     return "[" . join("] [", @infos). "]";
 }
