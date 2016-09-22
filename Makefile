@@ -19,14 +19,14 @@ what:
 bin: 
 
 jar: 
-	ant -Djar_file=$(JARFILE) -Dkb_top=$(KB_TOP) dist
+	-ant -Djar_file=$(JARFILE) -Dkb_top=$(KB_TOP) dist
 
 deploy: deploy-client
 deploy-service: deploy-client
 deploy-client: deploy-libs  deploy-java
 
 deploy-java: jar
-	cp $(JARFILE) $(TARGET)/lib
+	-cp $(JARFILE) $(TARGET)/lib
 
 test:
 	for t in $(TESTS) ; do \
@@ -37,6 +37,6 @@ test:
 	done
 
 clean:
-	ant clean
+	-ant clean
 
 include $(TOP_DIR)/tools/Makefile.common.rules
