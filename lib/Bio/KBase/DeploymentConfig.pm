@@ -3,6 +3,7 @@ package Bio::KBase::DeploymentConfig;
 use strict;
 use base 'Class::Accessor';
 use Config::Simple;
+use Data::Dumper;
 
 __PACKAGE__->mk_accessors(qw(service_name settings));
 
@@ -67,6 +68,7 @@ sub new
     {
 	my $cfg = Config::Simple->new();
 	$cfg->read($cfg_file);
+	patch_config($cfg);
 
 	my %cfg = $cfg->vars;
 
@@ -86,6 +88,50 @@ sub new
 
     return bless $self, $class;
 }
+
+=item C<patch_config>
+    
+Enable a workaround for the access by directory name (e.g. genome_anntation)
+and access by service name (e.g. GenomeAnnotation).
+
+We do this by looking in each block for a setting of _service_name. If that exists,
+we will replicate the contents block into a block named with the value
+of the _service_name attribute.
+
+=cut
+    
+sub patch_config
+{
+    my($cfg) = @_;
+
+    my @patch_list;
+    for my $name ($cfg->param())
+    {
+	my($k, $v) = split(/\./, $name, 2);
+	if ($v eq '_service_name')
+	{
+	    push(@patch_list, [$k, $cfg->param($name)]);
+	}
+    }
+
+    for my $patch (@patch_list)
+    {
+	my($existing, $new) = @$patch;
+	#
+	# Test to see if the mapped block exists.
+	#
+	my $new_blk = $cfg->get_block($new);
+	if (%$new_blk)
+	{
+	    warn "Patching service name for $existing: service name $new already exists\n";
+	    next;
+	}
+	my $blk = $cfg->get_block($existing);
+	$cfg->set_block($new, $blk);
+    }
+}
+
+
 
 =item C<setting>
 
