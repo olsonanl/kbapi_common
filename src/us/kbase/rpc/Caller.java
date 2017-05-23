@@ -14,12 +14,21 @@ import org.codehaus.jackson.map.ObjectMapper;
 public class Caller {
 
     public String url;
+    public String token;
     public URL urlobj;
     ObjectMapper mapper;
 
     public Caller(String url) throws MalformedURLException
     {
 	this.url = url;
+	this.urlobj = new URL(url);
+	mapper =new ObjectMapper();
+    }
+
+    public Caller(String url, String token) throws MalformedURLException
+    {
+	this.url = url;
+	this.token = token;
 	this.urlobj = new URL(url);
 	mapper =new ObjectMapper();
     }
@@ -31,6 +40,10 @@ public class Caller {
 	    conn = (HttpURLConnection) urlobj.openConnection();
 	    conn.setDoOutput(true);
 	    conn.setRequestMethod("POST");
+	    if (this.token != null)
+	    {
+		conn.setRequestProperty("Authorization", this.token);
+	    }
 
 	    return conn;
 	} catch (Exception e) {
